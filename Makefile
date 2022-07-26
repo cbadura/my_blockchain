@@ -1,26 +1,42 @@
+NAME = my_blockchain
+
 OBJ = obj/main.o\
+	obj/parse_save.o\
 	obj/helpers.o\
 	obj/string_mgmt.o\
+	obj/blockchain.o\
+	obj/action.o\
 
-CFLAGS += -Iinclude # -g3 -fsanitize=address # -Wall -Wextra -Werror
+CFLAGS += -Iinclude -Wall -Wextra -Werror -g3 -fsanitize=address
 
-HEADER = include/my_blockchain.h\
+HEADER = include/main.h\
+	include/parse_save.h\
+	include/blockchain.h\
 	include/helpers.h\
 	include/string_mgmt.h\
+	include/dbg.h\
+	include/action.h\
 
 BIN = bin/my_blockchain
 CC = gcc
+RM = rm -rf
 
-all: my_blockchain
+all: $(NAME)
 
-my_blockchain: $(OBJ)
+$(NAME): $(OBJ)
 	$(CC) -o $(BIN) $(OBJ) $(CFLAGS)
 
 obj/main.o: src/main.c
 	${CC} ${CFLAGS} -c $< -o $@
+obj/parse_save.o: src/parse_save.c
+	${CC} ${CFLAGS} -c $< -o $@
+obj/blockchain.o: src/blockchain.c
+	${CC} ${CFLAGS} -c $< -o $@
 obj/helpers.o: src/helpers.c
 	${CC} ${CFLAGS} -c $< -o $@
 obj/string_mgmt.o: src/string_mgmt.c
+	${CC} ${CFLAGS} -c $< -o $@
+obj/action.o: src/action.c
 	${CC} ${CFLAGS} -c $< -o $@
 
 clean:

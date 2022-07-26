@@ -1,136 +1,202 @@
 #include "blockchain.h"
+#include "string_mgmt.h"
+#include "parse_save.h"
 
 node_t *append_node(node_t *node_head, int n_id) // this appends to the node struct, takes the node_head and node id.
 {
-    if (node_head->nId == NULL) // if node_head is empty, fill and return node_head
+    if (node_head == NULL) // if node_head is empty, fill and return node_head
     {
-        block_t *block_head = NULL;
+        node_t *node_head = malloc(sizeof(node_t));
+        node_head->block_head = NULL;
         node_head->nId = n_id;
         node_head->next = NULL;
         return node_head;
     }
-    while (node_head->next != NULL) // otherwise loop through list until we reach the last entry
-        node_head = node_head->next;
+    node_t *current = node_head;
+    while (current->next != NULL) // otherwise loop through list until we reach the last entry
+        current = current->next;
     node_t *new = (node_t *)malloc(sizeof(node_t)); // allocate memory to a new node and fill with node id.
-    block_t *block_head = NULL;
+    new->block_head = NULL;
     new->nId = n_id;
     new->next = NULL;
-    node_head->next = new;
+    current->next = new;
+
     return node_head;
 }
 
 block_t *append_block(block_t *block_head, char *b_id) // this appends to the block struct, takes the block_head and block id.
 {
-    if (block_head->bId == NULL) // if block_head is empty, fill and return block_head
+    block_t *current = block_head;
+    if (block_head == NULL) // if blockhead is empty, fill and return blockhead
     {
+        // printf("blockhead is null 34, block id = %s\n", b_id);
+        block_t *block_head = malloc(sizeof(block_t));
         block_head->bId = b_id;
         block_head->next = NULL;
         return block_head;
     }
-    while (block_head->next != NULL) // otherwise loop through list until we reach the last entry
-        block_head = block_head->next;
-    block_t *new = (block_t *)malloc(sizeof(block_t)); // allocate memory to a new node and fill with node id.
+    while (current->next != NULL) // otherwise loop through list until we reach the last entry
+        current = current->next;
+    block_t *new = (block_t *)malloc(sizeof(block_t)); // allocate memory to a new block and fill with block id.
     new->bId = b_id;
     new->next = NULL;
-    block_head->next = new;
+    current->next = new;
+
     return block_head;
 }
 
-void sorter(node_t *node_head, int n_id, char *b_id) // sorts through the nodes to know where to append the blocks
+block_t *remove_blocks(block_t *block_head, char *b_id) // function to remove blocks, will require some testing
 {
-    node_t *current = node_head;
-    char *comp = atoi(n_id);
-    if (strcmp(comp, "*")) // if node id == * append block to all nodes
-    {
-        while (current != NULL) // loop through nodes
+        block_t *temp;
+        block_t *current = block_head;
+        while (current != NULL)
         {
-            append_block(current->block_head, b_id);
-            current = node_head->next;
+            if (my_strcmp(block_head->bId, b_id) == 0) // removes the first block
+            {
+                temp = block_head;
+                block_head = block_head->next;
+                temp->bId = NULL;
+                temp->next = NULL;
+                free(temp);
+                return block_head;
+            }
+            else if (((my_strcmp(current->next->bId, b_id)) == 0) && current->next->next != NULL) // checks if the next block id is what we need, if it is set next to temp, current to next-next and then set temp nxt to NULL and free temp.
+            {
+                temp = current->next;
+                current->next = current->next->next;
+                temp->bId = NULL;
+                temp->next = NULL;
+                free(temp);
+                return block_head;
+            }
+            else if (my_strcmp(current->bId, b_id) == 0 && current->next->next == NULL)
+            {
+                temp = current->next;
+                temp->bId = NULL;
+                current->next = NULL;
+                free(temp);
+                return block_head;
+            }
+            else
+                break;
+            current = current->next;
         }
-    }
-    else
-    {
-        while (current->next != NULL)
-        {
-            if (current->nId == n_id) // if node id matches the input to the function then we continue
-                append_block(current->block_head, b_id);
-            current = node_head->next;
-        }
-    }
+    return block_head;
 }
 
-void remove_nodes(node_t *node_head, int n_id) // function to remove nodes based on node id.
+// NEED TO SORT OUT REMOVE FUNCTION FOR IF THERE ARE BLOCKS CURRENTLY STORED
+
+node_t *remove_nodes(node_t *node_head, int n_id) // function to remove nodes based on node id.
 {
-    node_t *temp, *current, *prev;
-    char *comp = atoi(n_id);
-    if (strcmp(comp, "*")) // if node id == * delete all nodes
+    node_t *current = node_head, *temp;
+    while (current != NULL)
     {
-        current = node_head;
-        while (current != NULL) // this should loop through all nodes in list, setting the current->next to NULL and freeing the current. not convinced this will work. Need to test once stuff is up and running
+        if(node_head->nId == n_id) // removes the first node bu pointing at the next and free
+        {
+            temp = node_head;
+            node_head = node_head->next;
+            temp->next = NULL;
+            if(temp->block_head != NULL) // if blockhead is present
+            {
+                printf("we get here\n");
+                while(temp->block_head != NULL) // loop through the blockhead list
+                {
+                    printf("and here?\n");
+                    block_t *prev;// create some temp block lists
+                    prev = temp->block_head; // assign them to my blockhead
+                    prev = NULL;
+                    free(prev);
+                    temp->block_head = temp->block_head->next;
+                }
+            }
+            free(temp);
+            return node_head;
+        }
+        if (current->next->nId == n_id && current->next->next != NULL) // checks if the next node id is what we need, if it is set head to prev, next to temp, current to next-next and then set temp nxt to NULL and free temp. Also will need testing
+        {
+            temp = current->next;
+            current->next = current->next->next;
+            temp->next = NULL;
+            if(temp->block_head != NULL) // if blockhead is present
+            {
+                printf("we get here\n");
+                while(temp->block_head != NULL) // loop through the blockhead list
+                {
+                    printf("and here?\n");
+                    block_t *prev;// create some temp block lists
+                    prev = temp->block_head; // assign them to my blockhead
+                    prev = NULL;
+                    free(prev);
+                    temp->block_head = temp->block_head->next;
+                }
+            }
+            free(temp);
+            return node_head;
+        }
+        if(current->next->nId == n_id && current->next->next == NULL) // removes te last node by setting to temp, pointing to null and free
         {
             temp = current->next;
             current->next = NULL;
-            free(node_head);
-            current = temp;
-        }
-    }
-    else // if node id isnt * then need to loop through node list until find correct node id
-    {
-        while (node_head != NULL)
-        {
-            if (node_head->next->nId == n_id) // checks if the next node id is what we need, if it is set head to prev, next to temp, current to next-next and then set temp nxt to NULL and free temp. Also will need testing
+            if(temp->block_head != NULL) // if blockhead is present
             {
-                prev = node_head;
-                temp = node_head->next;
-                current = node_head->next->next;
-                prev->next = current;
-                temp->next = NULL;
-                free(temp);
+                printf("we get here\n");
+                while(temp->block_head != NULL) // loop through the blockhead list
+                {
+                    printf("and here?\n");
+                    block_t *prev;// create some temp block lists
+                    prev = temp->block_head; // assign them to my blockhead
+                    prev = NULL;
+                    free(prev);
+                    temp->block_head = temp->block_head->next;
+                }
             }
+            free(temp);
+            return node_head;
         }
     }
+    return node_head;
 }
 
-void remove_blocks(node_t *node_head, char* b_id, int n_id) // function to remove blocks, will require some testing
+node_t *listPrinter(node_t *node_head, char *argument) // generic list printer
 {
-    block_t *temp, *current, *prev;
-    while (node_head != NULL) // loop through all nodes
+    node_t *current = node_head;
+    //printf("node head list printer 118 %d\n", node_head->nId);
+    if (node_head == NULL)
     {
-        while(node_head->block_head != NULL) // while the blockhead exists and isnt null
-        {
-            if(strcmp(node_head->block_head->next->bId, b_id)) // use strcmp to see whter the bid matches, if it does switch some nodes around and free the node with matching bid
-            {
-                prev = node_head->block_head;
-                temp = node_head->block_head->next;
-                current = node_head->block_head->next->next;
-                prev->next = current;
-                temp->next = NULL;
-                free(temp);
-            }
-        }
-        node_head = node_head->next;
+        printf("%s\n", ERR_4);
+        return node_head;
     }
-}
-
-void listPrinter(node_t* node_head, char* argument) //generic list printer
-{
-    while (node_head != NULL) // if no -l argument, print out node id and \n
+    if (my_strcmp(argument, "-l") == 0) // if argument -l provided print out node id, followed by block ids followed by \n
     {
-        printf("%s\n", node_head->nId);
-        node_head = node_head->next;
-    }
-    if(strcmp(argument, "-l")) // if argument -l provided print out node id, followed by block ids followed by \n
-    {
-        while (node_head != NULL)
+        //printf("block head printer, 123 %s\n", node_head->block_head->bId);
+        while (current != NULL)
         {
-            printf("%s : ", node_head->nId);
-            while(node_head->block_head != NULL)
+            printf("%d : ", current->nId);
+            block_t *currBlock = current->block_head;
+            while (currBlock != NULL)
             {
-                printf("%d, ", node_head->block_head->bId);
-                node_head->block_head = node_head->block_head->next;
+                printf("%s, ", currBlock->bId);
+                currBlock = currBlock->next;
             }
             printf("\n");
-            node_head = node_head->next;
+            current = current->next;
         }
+        return node_head;
     }
+    else
+        while (current != NULL) // if no -l argument, print out node id and \n
+        {
+            printf("%d\n", current->nId);
+            current = current->next;
+        }
+    return node_head;
 }
+
+// void save_blockchain(chain_t *chain)
+// {
+//     FILE * filePointer;
+
+//     filePointer = fopen("saved_chain", "w+");
+
+
+// }
